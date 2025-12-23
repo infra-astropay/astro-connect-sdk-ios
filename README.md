@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.0")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.2")
 ]
 ```
 
@@ -129,6 +129,8 @@ struct ContentView: View {
         case .closed:
             print("User closed the SDK")
             dismiss()
+        case .event(let event):
+            print("Event: \(event.eventName)")
         }
     }
 }
@@ -172,6 +174,8 @@ class MyViewController: UIViewController {
         case .closed:
             print("User closed the SDK")
             dismiss(animated: true)
+        case .event(let event):
+            print("Event: \(event.eventName)")
         }
     }
 
@@ -191,14 +195,59 @@ class MyViewController: UIViewController {
 
 ## Handling Results
 
-The SDK returns an `AstroResult` with three possible states:
+The SDK returns an `AstroResult` with four possible states:
 
 ```swift
 public enum AstroResult {
     case success              // Operation completed successfully
     case failure(AstroError)  // An error occurred
     case closed               // User closed the SDK
+    case event(AstroEvent)    // An analytics event was received
 }
+```
+
+### Handling Events
+
+The SDK emits analytics events during user interactions. You can capture these events for tracking purposes:
+
+```swift
+private func handleResult(_ result: AstroResult) {
+    switch result {
+    case .success:
+        print("Operation completed successfully")
+    case .failure(let error):
+        print("Error: \(error.errorDetail)")
+    case .closed:
+        print("User closed the SDK")
+    case .event(let event):
+        print("Event: \(event.eventName) - \(event.eventCategory)")
+        // Send to your analytics platform
+    }
+}
+```
+
+### Event Structure
+
+```swift
+public struct AstroEvent {
+    public let screenName: String           // Screen where the event occurred
+    public let eventName: String            // Name of the event
+    public let eventCategory: String        // Category: "user_action", "page_view", etc.
+    public let eventProperties: [String: Any]?  // Additional event data (optional)
+    public let sessionId: String            // Session identifier
+    public let appVersion: String           // SDK version
+    public let platform: String             // Platform: "ios"
+}
+```
+
+### Accessing Event Properties
+
+```swift
+case .event(let event):
+    // Access a specific property safely
+    if let amount = event.eventProperties?["amount"] as? Int {
+        print("Amount: \(amount)")
+    }
 ```
 
 ## Error Codes
@@ -240,6 +289,7 @@ error.errorDetail      // Full detail: "[1003-01] No internet connection"
 
 | Subcode | Name | Description |
 |---------|------|-------------|
+| `01`  | `JSON_PARSING_ERROR` | Error parsing data from the SDK |
 | `401` | `UNAUTHORIZED` | Authentication error (invalid or expired token) |
 
 ### Configuration Errors (1002)
