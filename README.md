@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.2")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.3")
 ]
 ```
 
@@ -59,6 +59,7 @@ let configuration = AstroConfiguration(
     language: "en",                     // Language code (optional, default: "en")
     flow: "home",                       // Specific flow (optional)
     flowParams: ["amount": 100],        // Flow parameters (optional)
+    showCloseButton: true,              // Show close button (optional, default: true)
     embedded: true,                     // Embedded mode (optional, default: true)
     logSetting: AstroLogSetting(        // Log configuration (optional)
         enabled: true,
@@ -78,6 +79,7 @@ let configuration = AstroConfiguration(
 | `language` | `String` | No | Language code (e.g., `"en"`, `"es"`, `"pt"`) |
 | `flow` | `String` | No | Flow to execute (e.g., `"home"`, `"activities"`, `"topup"`, `"cards"`) |
 | `flowParams` | `[String: Any]` | No | Additional flow parameters |
+| `showCloseButton` | `Bool` | No | Show built-in close button in the SDK header (default: `true`) |
 | `embedded` | `Bool` | No | Embedded mode (default: `true`) |
 | `logSetting` | `AstroLogSetting` | No | Logging configuration |
 
@@ -110,7 +112,6 @@ struct ContentView: View {
                 configuration: configuration,
                 onResult: handleResult
             )
-            .ignoresSafeArea()
             .alert("Error", isPresented: $showError) {
                 Button("OK") { dismiss() }
             } message: {
