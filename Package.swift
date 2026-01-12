@@ -17,8 +17,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "AstroConnectSDK",
-            url: "https://github.com/infra-astropay/astro-connect-sdk-ios/releases/download/v1.0.3/AstroConnectSDK-1.0.3.zip",
-            checksum: "87d674ff403ca007f55152927ec3232a80167f5948eec00048fe97a8cbc7c778"
+            url: "https://github.com/infra-astropay/astro-connect-sdk-ios/releases/download/v1.0.4/AstroConnectSDK-1.0.4.zip",
+            checksum: "e4c75a8d5516773628cdd9df59561d6a92bcea89a0b9a93d628402638fa7b2ac"
         )
     ]
 )

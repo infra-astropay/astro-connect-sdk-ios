@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.3")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.4")
 ]
 ```
 
