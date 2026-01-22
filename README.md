@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.6")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.7")
 ]
 ```
 
@@ -45,6 +45,8 @@ Add the following keys to your `Info.plist` if the flow requires camera access:
 <key>NSCameraUsageDescription</key>
 <string>Camera access is required for identity verification</string>
 ```
+
+> **Important:** The `NSCameraUsageDescription` value is the message shown to users in the camera permission dialog. Customize this message to clearly explain why your app needs camera access. The dialog will display your **app name** (from your app's bundle display name) along with this message.
 
 ### Create Configuration
 
