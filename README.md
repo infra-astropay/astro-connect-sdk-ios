@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.7")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.8")
 ]
 ```
 
@@ -39,7 +39,9 @@ Next, embed the framework in your app's target settings: go to the Frameworks, L
 
 ### Required Permissions
 
-Add the following keys to your `Info.plist` if the flow requires camera access:
+Add the following keys to your `Info.plist` depending on the features your flow requires:
+
+#### Camera Access
 
 ```xml
 <key>NSCameraUsageDescription</key>
@@ -47,6 +49,17 @@ Add the following keys to your `Info.plist` if the flow requires camera access:
 ```
 
 > **Important:** The `NSCameraUsageDescription` value is the message shown to users in the camera permission dialog. Customize this message to clearly explain why your app needs camera access. The dialog will display your **app name** (from your app's bundle display name) along with this message.
+
+#### Biometric Authentication (Face ID)
+
+If your flow uses biometric authentication (2FA with Face ID), add:
+
+```xml
+<key>NSFaceIDUsageDescription</key>
+<string>Face ID is required for biometric authentication</string>
+```
+
+> **Note:** This permission is required for devices with Face ID. Touch ID does not require a usage description in Info.plist.
 
 ### Create Configuration
 
@@ -56,6 +69,10 @@ import AstroConnectSDK
 let configuration = AstroConfiguration(
     environment: "sandbox",             // "sandbox", "production"
     appIssuer: "your-app-issuer",       // Application identifier (your app name)
+    clientId: "your-client-id",         // Client identifier (required)
+    partnerUserId: "your-partner-user-id", // Partner user identifier (required)
+    phoneCode: "51",                    // Phone country code (optional)
+    phoneNumber: "123456789",           // Phone number (optional)
     accessToken: "your-access-token",   // Authentication token
     theme: .system,                     // .light, .dark, .system (optional)
     language: "en",                     // Language code (optional, default: "en")
@@ -76,7 +93,11 @@ let configuration = AstroConfiguration(
 |-----------|------|----------|-------------|
 | `environment` | `String` | Yes | Environment: `"sandbox"`, `"production"` |
 | `appIssuer` | `String` | Yes | Application identifier |
-| `accessToken` | `String` | No* | Authentication token. *Required on first use to initiate session; optional afterwards |
+| `clientId` | `String` | Yes | Client identifier |
+| `partnerUserId` | `String` | Yes | Partner user identifier |
+| `phoneCode` | `String?` | No | Phone country code (e.g., `"51"`, `"54"`) |
+| `phoneNumber` | `String?` | No | Phone number |
+| `accessToken` | `String` | No | Authentication token. |
 | `theme` | `AstroTheme` | No | Visual theme: `.light`, `.dark`, `.system` |
 | `language` | `String` | No | Language code (e.g., `"en"`, `"es"`, `"pt"`) |
 | `flow` | `String` | No | Flow to execute (e.g., `"home"`, `"activities"`, `"topup"`, `"cards"`) |
@@ -102,6 +123,8 @@ struct ContentView: View {
     let configuration = AstroConfiguration(
         environment: "sandbox",
         appIssuer: "your-app-issuer",
+        clientId: "your-client-id",
+        partnerUserId: "your-partner-user-id",
         accessToken: "your-access-token"
     )
 
@@ -152,6 +175,8 @@ class MyViewController: UIViewController {
         let configuration = AstroConfiguration(
             environment: "sandbox",
             appIssuer: "your-app-issuer",
+            clientId: "your-client-id",
+            partnerUserId: "your-partner-user-id",
             accessToken: "your-access-token"
         )
 
@@ -301,6 +326,8 @@ error.errorDetail      // Full detail: "[1003-01] No internet connection"
 |---------|-------|
 | `"accessToken is required"` | Empty access token |
 | `"appIssuer is required"` | Empty app issuer |
+| `"clientId is required"` | Empty client ID |
+| `"partnerUserId is required"` | Empty partner user ID |
 | `"Environment is not supported"` | Invalid environment |
 
 ## Log Configuration
@@ -316,6 +343,8 @@ let logSetting = AstroLogSetting(
 let configuration = AstroConfiguration(
     environment: "sandbox",
     appIssuer: "your-app-issuer",
+    clientId: "your-client-id",
+    partnerUserId: "your-partner-user-id",
     accessToken: "your-access-token",
     logSetting: logSetting
 )
@@ -341,6 +370,8 @@ You can customize the loading view:
 let configuration = AstroConfiguration(
     environment: "sandbox",
     appIssuer: "your-app-issuer",
+    clientId: "your-client-id",
+    partnerUserId: "your-partner-user-id",
     accessToken: "your-access-token"
 ) {
     // Custom loading view
