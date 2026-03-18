@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.8")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.9")
 ]
 ```
 
@@ -80,6 +80,7 @@ let configuration = AstroConfiguration(
     flowParams: ["amount": 100],        // Flow parameters (optional)
     showCloseButton: true,              // Show close button (optional, default: true)
     embedded: true,                     // Embedded mode (optional, default: true)
+    biometricGracePeriod: 120,          // Seconds to skip biometric re-prompt (optional, default: 120)
     logSetting: AstroLogSetting(        // Log configuration (optional)
         enabled: true,
         logLevel: .debug
@@ -104,6 +105,7 @@ let configuration = AstroConfiguration(
 | `flowParams` | `[String: Any]` | No | Additional flow parameters |
 | `showCloseButton` | `Bool` | No | Show built-in close button in the SDK header (default: `true`) |
 | `embedded` | `Bool` | No | Embedded mode (default: `true`) |
+| `biometricGracePeriod` | `TimeInterval?` | No | Seconds to skip biometric re-prompt after a successful auth. Default: `120` (2 min). Range: `0`–`600` (10 min). Set to `0` to always require biometric. |
 | `logSetting` | `AstroLogSetting` | No | Logging configuration |
 
 ## Integration
