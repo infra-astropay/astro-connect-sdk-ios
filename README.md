@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.9")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.10")
 ]
 ```
 
@@ -78,9 +78,20 @@ let configuration = AstroConfiguration(
     language: "en",                     // Language code (optional, default: "en")
     flow: "home",                       // Specific flow (optional)
     flowParams: ["amount": 100],        // Flow parameters (optional)
-    showCloseButton: true,              // Show close button (optional, default: true)
+    showHeader: true,                   // Show header bar with close button (optional, default: true)
+    showHeaderLogo: true,               // Show co-branded logo in header (optional, default: true)
     embedded: true,                     // Embedded mode (optional, default: true)
     biometricGracePeriod: 120,          // Seconds to skip biometric re-prompt (optional, default: 120)
+    style: AstroStyle(                  // Custom style settings (optional)
+        backgroundColor: "#FFFFFF",
+        header: AstroHeaderStyle(
+            backgroundColor: "#EFEFEF",
+            borderColor: "#CCCCCC",
+            borderWidth: 1,
+            paddingHorizontal: 24,
+            paddingVertical: 16
+        )
+    ),
     logSetting: AstroLogSetting(        // Log configuration (optional)
         enabled: true,
         logLevel: .debug
@@ -103,9 +114,13 @@ let configuration = AstroConfiguration(
 | `language` | `String` | No | Language code (e.g., `"en"`, `"es"`, `"pt"`) |
 | `flow` | `String` | No | Flow to execute (e.g., `"home"`, `"activities"`, `"topup"`, `"cards"`) |
 | `flowParams` | `[String: Any]` | No | Additional flow parameters |
-| `showCloseButton` | `Bool` | No | Show built-in close button in the SDK header (default: `true`) |
+| `showHeader` | `Bool?` | No | Show header bar with close button and co-branded logo (default: `true`) |
+| `showHeaderLogo` | `Bool?` | No | Show co-branded issuer logo in the header (default: `true`) |
+| `showCloseButton` | `Bool?` | No | **Deprecated.** Use `showHeader` instead. |
+| `autoSize` | `Bool?` | No | **Deprecated.** Use `showHeader` instead. |
 | `embedded` | `Bool` | No | Embedded mode (default: `true`) |
 | `biometricGracePeriod` | `TimeInterval?` | No | Seconds to skip biometric re-prompt after a successful auth. Default: `120` (2 min). Range: `0`–`600` (10 min). Set to `0` to always require biometric. |
+| `style` | `AstroStyle?` | No | Custom style settings for background and header (see [Style Customization](#style-customization)) |
 | `logSetting` | `AstroLogSetting` | No | Logging configuration |
 
 ## Integration
@@ -363,6 +378,74 @@ let configuration = AstroConfiguration(
 ### Filtering Logs
 
 You can filter logs by SUBSYSTEM: `com.astropay.connect`
+
+## Style Customization
+
+You can customize the SDK's visual appearance using `AstroStyle`. This allows you to override the default background color and header styling.
+
+### AstroStyle
+
+| Property          | Type                | Description                                              |
+|-------------------|---------------------|----------------------------------------------------------|
+| `backgroundColor` | `String?`           | Main background color as hex string (e.g., `"#FFFFFF"`)  |
+| `header`          | `AstroHeaderStyle?` | Header style settings                                    |
+
+### AstroHeaderStyle
+
+| Property            | Type       | Default     | Description                                                          |
+|---------------------|------------|-------------|----------------------------------------------------------------------|
+| `backgroundColor`   | `String?`  | Theme-based | Header background color as hex string                                |
+| `borderColor`       | `String?`  | Theme-based | Header bottom border color as hex string                             |
+| `borderWidth`       | `CGFloat?` | `0`         | Header bottom border width in points. Set to `0` to hide the border  |
+| `paddingHorizontal` | `CGFloat?` | `24`        | Horizontal padding inside the header                                 |
+| `paddingVertical`   | `CGFloat?` | `16`        | Vertical padding inside the header                                   |
+
+### Example
+
+```swift
+let style = AstroStyle(
+    backgroundColor: "#FFFFFF",
+    header: AstroHeaderStyle(
+        backgroundColor: "#EFEFEF",
+        borderColor: "#CCCCCC",
+        borderWidth: 1,
+        paddingHorizontal: 24,
+        paddingVertical: 16
+    )
+)
+
+let configuration = AstroConfiguration(
+    environment: "sandbox",
+    appIssuer: "your-app-issuer",
+    clientId: "your-client-id",
+    partnerUserId: "your-partner-user-id",
+    accessToken: "your-access-token",
+    style: style
+)
+```
+
+> **Note:** When `style` is not provided, the SDK uses default colors based on the selected theme (light/dark/system).
+>
+> **Important:** When you override a color via `AstroStyle`, the SDK **stops using the theme-based default** for that property. This means you are responsible for providing the appropriate value for both light and dark modes. For example:
+>
+> ```swift
+> let isDark = UITraitCollection.current.userInterfaceStyle == .dark
+>
+> let style = AstroStyle(
+>     backgroundColor: isDark ? "#041311" : "#FFFFFF",
+>     header: AstroHeaderStyle(
+>         backgroundColor: isDark ? "#061E1D" : "#EFEFEF"
+>     )
+> )
+> ```
+
+## Co-Branded Header Logo
+
+When `showHeaderLogo` is `true` (the default), the SDK header displays a co-branded logo for the issuer. The logo is fetched automatically based on the `appIssuer` value and the current theme.
+
+- The SDK looks for a logo at: `{baseUrl}/{appIssuer}_{theme}.webp`
+- If the issuer logo is not found, it falls back to the default AstroPay logo
+- Set `showHeaderLogo: false` to hide the logo entirely
 
 ## Custom Loading View
 
