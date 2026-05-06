@@ -1,0 +1,91 @@
+# Changelog
+
+All notable changes to the AstroConnectSDK for iOS will be documented in this file.
+
+---
+
+## [1.0.11]
+
+### Added
+
+- **Pre-warming**: new `AstroConnect.preWarm` to initialize the SDK in the background early in the app lifecycle, reducing first-open latency. Optional `appIssuer` parameter prepares the co-branded header logo in advance.
+- **Pre-loading**: new `AstroConnect.preload` to load the SDK with a specific configuration before presenting it, so `AstroConnectView` opens with no loading screen.
+- **Clear**: new `AstroConnect.clear` to reset SDK data (cookies, local storage, caches) for a given environment. Also discards any active pre-load.
+
+---
+
+## [1.0.10]
+
+### Added
+
+- Added co-branded issuer logo in the SDK header. Controlled via `showHeaderLogo` in `AstroConfiguration`.
+
+---
+
+## [1.0.9]
+
+### Added
+
+- Added `biometricGracePeriod` parameter to control how long biometric re-prompting is suppressed after a successful authentication.
+- Added biometric hardware availability check before registration.
+
+---
+
+## [1.0.8]
+
+> **Breaking change:** `clientId` and `partnerUserId` are now required parameters in `AstroConfiguration`. See the [Migration Guide](migrations/v1.0.7-to-v1.0.10.md) for details.
+
+### Added
+
+- Added phone sign-in support.
+- Added biometric authentication (2FA). Requires `NSFaceIDUsageDescription` in `Info.plist` for Face ID.
+
+---
+
+## [1.0.7]
+
+### Changed
+
+- Redesigned KYC and address onboarding screens.
+
+---
+
+## [1.0.6]
+
+### Changed
+
+- Updated minimum iOS deployment target to **iOS 15.0**.
+
+---
+
+## [1.0.5]
+
+### Added
+
+- Added external URL support (opens in Safari or default browser).
+- Added analytics event emission during user flows, accessible via `.event(AstroEvent)`.
+
+---
+
+## [1.0.4]
+
+### Added
+
+- Access token is now included in the URL builder.
+
+---
+
+## [1.0.3]
+
+### Added
+
+- Added close button to the SDK header.
+
+---
+
+## [1.0.2]
+
+### Added
+
+- Added support for `.event(AstroEvent)` callbacks during user flows.
+- Initial iOS SDK release.

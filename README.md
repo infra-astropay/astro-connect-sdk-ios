@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.10")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.11")
 ]
 ```
 
@@ -110,18 +110,18 @@ let configuration = AstroConfiguration(
 | `phoneCode` | `String?` | No | Phone country code (e.g., `"51"`, `"54"`) |
 | `phoneNumber` | `String?` | No | Phone number |
 | `accessToken` | `String` | No | Authentication token. |
-| `theme` | `AstroTheme` | No | Visual theme: `.light`, `.dark`, `.system` |
-| `language` | `String` | No | Language code (e.g., `"en"`, `"es"`, `"pt"`) |
+| `theme` | `AstroTheme` | No | Visual theme: `.light`, `.dark`, `.system`. Default: `.system` |
+| `language` | `String` | No | Language code (e.g., `"en"`, `"es"`, `"pt"`). Default: `"en"` |
 | `flow` | `String` | No | Flow to execute (e.g., `"home"`, `"activities"`, `"topup"`, `"cards"`) |
 | `flowParams` | `[String: Any]` | No | Additional flow parameters |
 | `showHeader` | `Bool?` | No | Show header bar with close button and co-branded logo (default: `true`) |
 | `showHeaderLogo` | `Bool?` | No | Show co-branded issuer logo in the header (default: `true`) |
 | `showCloseButton` | `Bool?` | No | **Deprecated.** Use `showHeader` instead. |
 | `autoSize` | `Bool?` | No | **Deprecated.** Use `showHeader` instead. |
-| `embedded` | `Bool` | No | Embedded mode (default: `true`) |
+| `embedded` | `Bool?` | No | Embedded mode (default: `true`) |
 | `biometricGracePeriod` | `TimeInterval?` | No | Seconds to skip biometric re-prompt after a successful auth. Default: `120` (2 min). Range: `0`–`600` (10 min). Set to `0` to always require biometric. |
 | `style` | `AstroStyle?` | No | Custom style settings for background and header (see [Style Customization](#style-customization)) |
-| `logSetting` | `AstroLogSetting` | No | Logging configuration |
+| `logSetting` | `AstroLogSetting?` | No | Logging configuration |
 
 ## Integration
 
@@ -238,11 +238,88 @@ class MyViewController: UIViewController {
 }
 ```
 
+## Performance Optimization
+
+### Pre-Warming (Recommended)
+
+Initializes the SDK in the background as early as possible (e.g. `application(_:didFinishLaunchingWithOptions:)` or `scene(_:willConnectTo:)`). This reduces the cold-start delay so the first SDK open feels instant.
+
+If `appIssuer` is provided, the co-branded header logo is also prepared in advance.
+
+```swift
+AstroConnect.preWarm(
+    environment: "sandbox",
+    appIssuer: "your-app-issuer"     // Optional — prepares the header logo in advance
+) {
+    print("SDK ready")
+} onError: { error in
+    print("Pre-warm failed: \(error.errorDetail)")
+}
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `environment` | `String` | Yes | Target environment: `"production"`, `"sandbox"` |
+| `appIssuer` | `String?` | No | If provided, the co-branded header logo is prepared in advance |
+| `logSetting` | `AstroLogSetting?` | No | Logging configuration |
+| `force` | `Bool` | No | Force re-initialization even if already completed (default: `false`) |
+| `onSuccess` | `(() -> Void)?` | No | Called when the SDK is ready |
+| `onError` | `((AstroError) -> Void)?` | No | Called if initialization fails |
+
+### Pre-Loading
+
+Pre-loads the SDK with a specific configuration before presenting it to the user. Call this when the user lands on a screen that will open the SDK shortly. When `AstroConnectView` is presented with the same configuration, it appears instantly with no loading screen.
+
+> **Important:** A pre-load is **single-use** and **configuration-bound**.
+> - Once `AstroConnectView` is presented, the pre-loaded session is consumed. To keep the instant-open behavior the next time the user enters the SDK, call `preload` again after the view is dismissed.
+> - If the configuration passed to `AstroConnectView` differs from the one used in `preload`, the pre-load is discarded and the SDK initializes normally. If the configuration may change after pre-loading, call `preload` again with the updated configuration to restore the fast path.
+
+```swift
+AstroConnect.preload(
+    configuration: configuration
+) {
+    print("SDK ready — will open instantly")
+} onError: { error in
+    print("Preload failed: \(error.errorDetail)")
+}
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `configuration` | `AstroConfiguration` | Yes | The same configuration that will be passed to `AstroConnectView` |
+| `onSuccess` | `(() -> Void)?` | No | Called when the SDK is ready |
+| `onError` | `((AstroError) -> Void)?` | No | Called if pre-loading fails |
+
+### Clearing SDK Data
+
+Resets the SDK to a clean state for the given environment. Also discards any active pre-load. Call this after user logout or when a fresh start is required.
+
+```swift
+AstroConnect.clear(environment: "sandbox") {
+    print("SDK data cleared")
+} onError: { error in
+    print("Clear failed: \(error.errorDetail)")
+}
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `environment` | `String` | Yes | Target environment: `"production"`, `"sandbox"` |
+| `onSuccess` | `(() -> Void)?` | No | Called when the SDK data has been cleared |
+| `onError` | `((AstroError) -> Void)?` | No | Called if the environment is invalid |
+
 ## Handling Results
 
 The SDK returns an `AstroResult` with four possible states:
 
 ```swift
+@frozen
 public enum AstroResult {
     case success              // Operation completed successfully
     case failure(AstroError)  // An error occurred
@@ -250,10 +327,6 @@ public enum AstroResult {
     case event(AstroEvent)    // An analytics event was received
 }
 ```
-
-### Handling Events
-
-The SDK emits analytics events during user interactions. You can capture these events for tracking purposes:
 
 ```swift
 private func handleResult(_ result: AstroResult) {
@@ -264,6 +337,7 @@ private func handleResult(_ result: AstroResult) {
         print("Error: \(error.errorDetail)")
     case .closed:
         print("User closed the SDK")
+        dismiss()
     case .event(let event):
         print("Event: \(event.eventName) - \(event.eventCategory)")
         // Send to your analytics platform
@@ -271,17 +345,22 @@ private func handleResult(_ result: AstroResult) {
 }
 ```
 
+
+## Events
+
+The SDK emits analytics events during user interactions via the `.event(AstroEvent)` case. Each event exposes the following fields:
+
 ### Event Structure
 
 ```swift
 public struct AstroEvent {
-    public let screenName: String           // Screen where the event occurred
-    public let eventName: String            // Name of the event
-    public let eventCategory: String        // Category: "user_action", "page_view", etc.
-    public let eventProperties: [String: Any]?  // Additional event data (optional)
-    public let sessionId: String            // Session identifier
-    public let appVersion: String           // SDK version
-    public let platform: String             // Platform: "ios"
+    public let screenName: String                    // Screen where the event occurred
+    public let eventName: String                     // Name of the event
+    public let eventCategory: String                 // Category: "user_action", "page_view", etc.
+    public let eventProperties: [String: Any]?       // Additional event data (optional)
+    public let sessionId: String                     // Session identifier
+    public let appVersion: String                    // SDK version
+    public let platform: String                      // Platform: "ios"
 }
 ```
 
@@ -294,6 +373,8 @@ case .event(let event):
         print("Amount: \(amount)")
     }
 ```
+
+For the full catalog of events, screen names, and their properties, see [Events Reference](EVENTS.md).
 
 ## Error Codes
 
@@ -341,11 +422,12 @@ error.errorDetail      // Full detail: "[1003-01] No internet connection"
 
 | Message | Cause |
 |---------|-------|
-| `"accessToken is required"` | Empty access token |
 | `"appIssuer is required"` | Empty app issuer |
 | `"clientId is required"` | Empty client ID |
 | `"partnerUserId is required"` | Empty partner user ID |
 | `"Environment is not supported"` | Invalid environment |
+| `"biometricGracePeriod must be a whole number (integer seconds)"` | Non-integer value passed to `biometricGracePeriod` |
+| `"biometricGracePeriod must be between 0 and 600 seconds"` | `biometricGracePeriod` outside the supported range |
 
 ## Log Configuration
 
@@ -354,6 +436,7 @@ Logs are disabled in production for security.
 ```swift
 let logSetting = AstroLogSetting(
     enabled: true,      // Enable logs
+    verbose: false,     // Verbose mode (optional, default: false)
     logLevel: .debug    // .error, .info, .debug
 )
 
@@ -475,6 +558,12 @@ let configuration = AstroConfiguration(
 |-------------|
 | `production` |
 | `sandbox` |
+
+## Resources
+
+- [Changelog](CHANGELOG.md) — Version history and what changed in each release.
+- [Events Reference](EVENTS.md) — All analytics events emitted by the SDK, including screen names, event names, categories, and properties.
+- [Migration Guides](migrations/) — Step-by-step guides for upgrading between versions that include breaking changes.
 
 ## Support
 
