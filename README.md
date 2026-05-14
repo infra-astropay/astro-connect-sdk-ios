@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.11")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.12")
 ]
 ```
 
@@ -122,6 +122,87 @@ let configuration = AstroConfiguration(
 | `biometricGracePeriod` | `TimeInterval?` | No | Seconds to skip biometric re-prompt after a successful auth. Default: `120` (2 min). Range: `0`–`600` (10 min). Set to `0` to always require biometric. |
 | `style` | `AstroStyle?` | No | Custom style settings for background and header (see [Style Customization](#style-customization)) |
 | `logSetting` | `AstroLogSetting?` | No | Logging configuration |
+
+### Home Banners
+
+When the SDK lands on the home screen (either `flow: "home"` or when no `flow` is specified), you can render promotional banners by passing a `banners` array inside `flowParams`. Each banner is a dictionary and supports two types:
+
+- `home-page` — full-screen banner shown once per session before the home loads (e.g. onboarding).
+- `home-header` — compact banner rendered at the top of the home. Multiple `home-header` banners scroll horizontally.
+
+```swift
+let configuration = AstroConfiguration(
+    environment: "sandbox",
+    appIssuer: "your-app-issuer",
+    clientId: "your-client-id",
+    partnerUserId: "your-partner-user-id",
+    accessToken: "your-access-token",
+    flow: "home",
+    flowParams: [
+        "banners": [
+            [
+                "bannerType": "home-page",
+                "bannerTitle": "Your wallet is ready to use!",
+                "bannerDescription": "Top up now and get 5% cashback on your first transaction.",
+                "bannerActionText": "Top Up Now",
+                "bannerDismissText": "Dismiss",
+                "bannerDeepLink": "topup",
+                "bannerImage": "banner-home-page-en",
+                "bannerImageSize": "30vh",
+            ],
+            [
+                "bannerType": "home-header",
+                "bannerTitle": "Your wallet is ready to use!",
+                "bannerDescription": "Top up now and get 5% cashback.",
+                "bannerActionText": "Top Up Now",
+                "bannerDeepLink": "topup",
+                "bannerImage": "banner-home-header-en",
+            ],
+        ]
+    ]
+)
+```
+
+#### Banner Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `bannerType` | `String` | Yes | Banner placement: `"home-page"` or `"home-header"` |
+| `bannerTitle` | `String?` | No | Title text |
+| `bannerDescription` | `String?` | No | Description text |
+| `bannerActionText` | `String?` | No | Primary action button label. If omitted on a `home-header` banner, a chevron is shown instead and the entire banner is clickable |
+| `bannerDismissText` | `String?` | No | Dismiss button label (only used by `home-page`) |
+| `bannerDeepLink` | `String` | Yes | Deep link triggered on action: `"topup"`, `"activities"`, `"cards"`, `"withdrawal"` |
+| `bannerImage` | `String?` | No | Image asset name to render on the banner |
+| `bannerImageSize` | `String?` | No | Image size for `home-page` banners. Accepts a CSS length in `px`, `vh`, or `vw` (e.g. `"200px"`, `"50vh"`, `"40vw"`). Defaults to `30vh` when omitted or invalid |
+
+### Topup Flow Parameters
+
+When the SDK opens in the topup flow (`flow: "topup"`), you can preset the amount, the currency, and a list of suggested amounts that are rendered as pills below the amount input.
+
+```swift
+let configuration = AstroConfiguration(
+    environment: "sandbox",
+    appIssuer: "your-app-issuer",
+    clientId: "your-client-id",
+    partnerUserId: "your-partner-user-id",
+    accessToken: "your-access-token",
+    flow: "topup",
+    flowParams: [
+        "amount": 50,
+        "currency": "USD",
+        "suggestedAmounts": [50, 100, 200],
+    ]
+)
+```
+
+#### Topup Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `amount` | `Double` | No | Pre-fills the amount input |
+| `currency` | `String` | No | Pre-selects the currency (ISO 4217 code, e.g., `"USD"`) |
+| `suggestedAmounts` | `[Double]` | No | List of positive amounts rendered as clickable pills below the input. Tapping a pill sets the input to that value |
 
 ## Integration
 
@@ -275,15 +356,24 @@ Pre-loads the SDK with a specific configuration before presenting it to the user
 > **Important:** A pre-load is **single-use** and **configuration-bound**.
 > - Once `AstroConnectView` is presented, the pre-loaded session is consumed. To keep the instant-open behavior the next time the user enters the SDK, call `preload` again after the view is dismissed.
 > - If the configuration passed to `AstroConnectView` differs from the one used in `preload`, the pre-load is discarded and the SDK initializes normally. If the configuration may change after pre-loading, call `preload` again with the updated configuration to restore the fast path.
+> - When biometric authentication is required for the user, any prompt is automatically deferred until `AstroConnectView` is presented, so the user is never prompted before the SDK is on screen.
 
 ```swift
 AstroConnect.preload(
-    configuration: configuration
-) {
-    print("SDK ready — will open instantly")
-} onError: { error in
-    print("Preload failed: \(error.errorDetail)")
-}
+    configuration: configuration,
+    onPreloadEnded: { reason in
+        switch reason {
+        case .loaded:
+            print("SDK ready — will open instantly")
+        case .deferred:
+            print("Preload deferred — will resume when AstroConnectView is presented")
+        case .failed(let error):
+            print("Preload failed: \(error.errorDetail)")
+        @unknown default:
+            print("Preload ended")
+        }
+    }
+)
 ```
 
 #### Parameters
@@ -291,8 +381,17 @@ AstroConnect.preload(
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `configuration` | `AstroConfiguration` | Yes | The same configuration that will be passed to `AstroConnectView` |
-| `onSuccess` | `(() -> Void)?` | No | Called when the SDK is ready |
-| `onError` | `((AstroError) -> Void)?` | No | Called if pre-loading fails |
+| `onPreloadEnded` | `((AstroPreloadEndReason) -> Void)?` | No | Called once with the reason the preload phase ended |
+
+#### `AstroPreloadEndReason`
+
+| Case | Meaning |
+|------|---------|
+| `.loaded` | The page finished loading during preload. The next `AstroConnectView` opens instantly. |
+| `.deferred` | The preload ended before the page fully loaded because the SDK deferred a biometric prompt or the integrator presented `AstroConnectView` before loading finished. The remaining work continues on the live view. |
+| `.failed(AstroError)` | The preload failed (network error, timeout, invalid configuration). |
+
+> The previous `onSuccess` / `onError` overload is deprecated but still works for backward compatibility.
 
 ### Clearing SDK Data
 
