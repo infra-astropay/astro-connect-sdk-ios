@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.12")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.13")
 ]
 ```
 
@@ -77,7 +77,7 @@ let configuration = AstroConfiguration(
     theme: .system,                     // .light, .dark, .system (optional)
     language: "en",                     // Language code (optional, default: "en")
     flow: "home",                       // Specific flow (optional)
-    flowParams: ["amount": 100],        // Flow parameters (optional)
+    flowParams: ["topup": ["amount": 100]], // Flow parameters (optional)
     showHeader: true,                   // Show header bar with close button (optional, default: true)
     showHeaderLogo: true,               // Show co-branded logo in header (optional, default: true)
     embedded: true,                     // Embedded mode (optional, default: true)
@@ -116,8 +116,6 @@ let configuration = AstroConfiguration(
 | `flowParams` | `[String: Any]` | No | Additional flow parameters |
 | `showHeader` | `Bool?` | No | Show header bar with close button and co-branded logo (default: `true`) |
 | `showHeaderLogo` | `Bool?` | No | Show co-branded issuer logo in the header (default: `true`) |
-| `showCloseButton` | `Bool?` | No | **Deprecated.** Use `showHeader` instead. |
-| `autoSize` | `Bool?` | No | **Deprecated.** Use `showHeader` instead. |
 | `embedded` | `Bool?` | No | Embedded mode (default: `true`) |
 | `biometricGracePeriod` | `TimeInterval?` | No | Seconds to skip biometric re-prompt after a successful auth. Default: `120` (2 min). Range: `0`–`600` (10 min). Set to `0` to always require biometric. |
 | `style` | `AstroStyle?` | No | Custom style settings for background and header (see [Style Customization](#style-customization)) |
@@ -125,10 +123,12 @@ let configuration = AstroConfiguration(
 
 ### Home Banners
 
-When the SDK lands on the home screen (either `flow: "home"` or when no `flow` is specified), you can render promotional banners by passing a `banners` array inside `flowParams`. Each banner is a dictionary and supports two types:
+Banners are cross-cutting: you can pass them via `flowParams.banners` regardless of the active flow. The `bannerType` value determines where each banner is rendered, not the flow that was initialized. Two placements are supported:
 
 - `home-page` — full-screen banner shown once per session before the home loads (e.g. onboarding).
 - `home-header` — compact banner rendered at the top of the home. Multiple `home-header` banners scroll horizontally.
+
+Each banner is a dictionary inside the `banners` array.
 
 ```swift
 let configuration = AstroConfiguration(
@@ -176,9 +176,13 @@ let configuration = AstroConfiguration(
 | `bannerImage` | `String?` | No | Image asset name to render on the banner |
 | `bannerImageSize` | `String?` | No | Image size for `home-page` banners. Accepts a CSS length in `px`, `vh`, or `vw` (e.g. `"200px"`, `"50vh"`, `"40vw"`). Defaults to `30vh` when omitted or invalid |
 
-### Topup Flow Parameters
+### Topup Parameters
 
-When the SDK opens in the topup flow (`flow: "topup"`), you can preset the amount, the currency, and a list of suggested amounts that are rendered as pills below the amount input.
+Topup parameters are cross-cutting: whenever the user lands on the topup amount screen — regardless of the flow that was initialized — you can preset the amount, the currency, and a list of suggested amounts that are rendered as pills below the amount input.
+
+Pass these values under a nested `topup` dictionary inside `flowParams`.
+
+`currency` is required for `amount` and `suggestedAmounts` to take effect: if it is omitted, or does not match the currency shown on the screen, neither is applied.
 
 ```swift
 let configuration = AstroConfiguration(
@@ -189,20 +193,43 @@ let configuration = AstroConfiguration(
     accessToken: "your-access-token",
     flow: "topup",
     flowParams: [
-        "amount": 50,
-        "currency": "USD",
-        "suggestedAmounts": [50, 100, 200],
+        "topup": [
+            "amount": 50,
+            "currency": "USD",
+            "suggestedAmounts": [50, 100, 200],
+        ]
     ]
 )
 ```
+
+For partners that operate multiple currencies, you can supply a per-currency preset map instead of (or alongside) the flat `suggestedAmounts` list. Keys are ISO 4217 codes (case-insensitive — they are normalized to uppercase internally):
+
+```swift
+// Per-currency preset map — overrides `suggestedAmounts` when present.
+// Keys are ISO 4217 codes (case-insensitive).
+let flowParams: [String: Any] = [
+    "topup": [
+        "suggestedAmountsByCurrency": [
+            "USD": [10, 25, 50, 100],
+            "EUR": [10, 20, 50, 100],
+            "BRL": [50, 100, 200, 500]
+        ]
+    ]
+]
+```
+
+> **Precedence:** When both `suggestedAmounts` and `suggestedAmountsByCurrency` are provided, the per-currency map wins. If the user is on a currency that is not a key in the map, no preset pills are shown — the flat list is NOT consulted as a fallback.
+
+> **Deprecated:** The flat keys `amount`, `currency`, and `suggestedAmounts` placed directly under `flowParams` are still accepted for backward compatibility, but the nested `flowParams.topup` shape is the recommended form. The flat keys will be removed in a future major version.
 
 #### Topup Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `amount` | `Double` | No | Pre-fills the amount input |
-| `currency` | `String` | No | Pre-selects the currency (ISO 4217 code, e.g., `"USD"`) |
-| `suggestedAmounts` | `[Double]` | No | List of positive amounts rendered as clickable pills below the input. Tapping a pill sets the input to that value |
+| `amount` | `Double` | No | Pre-fills the amount input. Requires `currency` and only applied when it matches the screen currency |
+| `currency` | `String` | No | Target currency (ISO 4217 code, e.g., `"USD"`). Required for `amount` and `suggestedAmounts` to take effect |
+| `suggestedAmounts` | `[Double]` | No | List of positive amounts rendered as clickable pills below the input. Tapping a pill sets the input to that value. Requires `currency` and only rendered when it matches the screen currency. Ignored entirely when `suggestedAmountsByCurrency` is provided |
+| `suggestedAmountsByCurrency` | `[String: [Double]]` | No | Per-currency preset map. Keys are ISO 4217 codes (case-insensitive). When present, takes precedence over `suggestedAmounts`; if the screen currency is not a key in the map, no preset pills are shown |
 
 ## Integration
 
@@ -250,8 +277,17 @@ struct ContentView: View {
         case .failure(let error):
             errorMessage = error.errorDetail
             showError = true
-        case .closed:
-            print("User closed the SDK")
+        case .closed(let code, let message):
+            switch code {
+            case "CLOSED_BY_USER_HEADER_BUTTON", "CLOSED_BY_USER_NAVIGATED_BACK", "CLOSED_BY_SYSTEM_DISMISS":
+                // User backed out or the view was dismissed — log a dismissal event to your analytics
+                print("sdk_dismissed code=\(code) message=\(message)")
+            case "CLOSED_BY_USER_SIGNED_OUT":
+                // User signed out from inside the SDK — clear local session state
+                print("User signed out — clearing local session")
+            default:
+                print("SDK closed: \(code) — \(message)")
+            }
             dismiss()
         case .event(let event):
             print("Event: \(event.eventName)")
@@ -297,8 +333,17 @@ class MyViewController: UIViewController {
             print("Operation completed successfully")
         case .failure(let error):
             showErrorAlert(message: error.errorDetail)
-        case .closed:
-            print("User closed the SDK")
+        case .closed(let code, let message):
+            switch code {
+            case "CLOSED_BY_USER_HEADER_BUTTON", "CLOSED_BY_USER_NAVIGATED_BACK", "CLOSED_BY_SYSTEM_DISMISS":
+                // User backed out or the view was dismissed — log a dismissal event to your analytics
+                print("sdk_dismissed code=\(code) message=\(message)")
+            case "CLOSED_BY_USER_SIGNED_OUT":
+                // User signed out from inside the SDK — clear local session state
+                print("User signed out — clearing local session")
+            default:
+                print("SDK closed: \(code) — \(message)")
+            }
             dismiss(animated: true)
         case .event(let event):
             print("Event: \(event.eventName)")
@@ -318,6 +363,8 @@ class MyViewController: UIViewController {
     }
 }
 ```
+
+> **Custom header?** If your host renders its own header instead of the built-in one, drive the SDK with `AstroConnectController` and set `showHeader = false` so you can wire your own close button to `controller.close(...)`. See [Custom Header](#custom-header) for the full setup.
 
 ## Performance Optimization
 
@@ -420,10 +467,10 @@ The SDK returns an `AstroResult` with four possible states:
 ```swift
 @frozen
 public enum AstroResult {
-    case success              // Operation completed successfully
-    case failure(AstroError)  // An error occurred
-    case closed               // User closed the SDK
-    case event(AstroEvent)    // An analytics event was received
+    case success                                       // Operation completed successfully
+    case failure(AstroError)                           // An error occurred
+    case closed(code: String, message: String)         // User closed the SDK — see Close payload
+    case event(AstroEvent)                             // An analytics event was received
 }
 ```
 
@@ -434,8 +481,8 @@ private func handleResult(_ result: AstroResult) {
         print("Operation completed successfully")
     case .failure(let error):
         print("Error: \(error.errorDetail)")
-    case .closed:
-        print("User closed the SDK")
+    case .closed(let code, let message):
+        print("User closed the SDK: \(code) — \(message)")
         dismiss()
     case .event(let event):
         print("Event: \(event.eventName) - \(event.eventCategory)")
@@ -443,6 +490,28 @@ private func handleResult(_ result: AstroResult) {
     }
 }
 ```
+
+### Close payload
+
+The associated values of `.closed` describe why the SDK closed:
+
+- `code: String` — a short machine-readable identifier in `UPPER_SNAKE_CASE`. All codes follow the `CLOSED_BY_*` convention (e.g. `CLOSED_BY_USER_HEADER_BUTTON`, `CLOSED_BY_HOST_APP`) and describe who or what triggered the close. Branch on this value when you need different behavior per close source.
+- `message: String` — a human-readable description, useful for logging.
+
+Both are plain strings. There is no enum or whitelist on the integrator side; the SDK fixes the values it emits and may introduce additional `code` values for in-SDK close paths in future releases without breaking the API. Treat any unrecognized `code` as a generic close.
+
+| code | source | typical message |
+|---|---|---|
+| `CLOSED_BY_USER_HEADER_BUTTON` | The built-in header close button | `User tapped the close button` |
+| `CLOSED_BY_HOST_APP` | `AstroConnectController.close()` | `Closed by host integrator` |
+| `CLOSED_BY_SYSTEM_DISMISS` | View was dismissed without an explicit close call (back-swipe, sheet drag, host removal) | `View was dismissed` |
+| `UNKNOWN` | Fallback when the close payload is missing or malformed | `` (empty string) |
+| `CLOSED_BY_USER_NAVIGATED_BACK` | User backed out at the root of a flow sub-tree | descriptive (e.g., `User backed out of activities`) |
+| `CLOSED_BY_USER_DISMISSED_ERROR` | User dismissed a terminal-error screen | descriptive (e.g., `User dismissed biometric error`) |
+| `CLOSED_BY_USER_CANCELLED_PIN` | User cancelled the PIN re-prompt | `User cancelled PIN re-prompt` |
+| `CLOSED_BY_USER_SIGNED_OUT` | User signed out from inside the SDK | `User signed out` |
+
+The `CLOSED_BY_USER_NAVIGATED_BACK`, `CLOSED_BY_USER_DISMISSED_ERROR`, `CLOSED_BY_USER_CANCELLED_PIN`, and `CLOSED_BY_USER_SIGNED_OUT` entries above are common examples — the list of in-SDK codes is not exhaustive.
 
 
 ## Events
@@ -628,6 +697,65 @@ When `showHeaderLogo` is `true` (the default), the SDK header displays a co-bran
 - The SDK looks for a logo at: `{baseUrl}/{appIssuer}_{theme}.webp`
 - If the issuer logo is not found, it falls back to the default AstroPay logo
 - Set `showHeaderLogo: false` to hide the logo entirely
+
+## Custom Header
+
+If you set `showHeader: false` and render your own header (for example, a custom close button or a navigation bar), use `AstroConnectController` to dismiss the SDK from your own UI. Calling `controller.close()` funnels into the same close path as the built-in header button and emits `AstroResult.closed` exactly once.
+
+```swift
+import SwiftUI
+import AstroConnectSDK
+
+struct CustomHeaderScreen: View {
+    @State private var showSDK = false
+    @State private var controller = AstroConnectController()
+
+    let configuration = AstroConfiguration(
+        environment: "sandbox",
+        appIssuer: "your-app-issuer",
+        clientId: "your-client-id",
+        partnerUserId: "your-partner-user-id",
+        accessToken: "your-access-token",
+        showHeader: false
+    )
+
+    var body: some View {
+        Button("Open AstroPay") { showSDK = true }
+            .fullScreenCover(isPresented: $showSDK) {
+                VStack(spacing: 0) {
+                    // Your custom header
+                    HStack {
+                        Text("My App")
+                            .font(.headline)
+                        Spacer()
+                        Button("Close") {
+                            controller.close()
+                        }
+                    }
+                    .padding()
+
+                    AstroConnectView(
+                        configuration: configuration,
+                        controller: controller,
+                        onResult: handleResult
+                    )
+                }
+            }
+    }
+
+    private func handleResult(_ result: AstroResult) {
+        switch result {
+        case .closed(let code, let message):
+            print("Closed: \(code) — \(message)")
+            showSDK = false
+        default:
+            break
+        }
+    }
+}
+```
+
+> `controller.close()` is idempotent — subsequent calls after the SDK has already closed are no-ops. The same applies if the SDK closes itself first (for example, when the user completes the flow): a later `controller.close()` will not re-fire `AstroResult.closed`. See [Close payload](#close-payload) for the list of `code` values the SDK emits with `.closed`.
 
 ## Custom Loading View
 
