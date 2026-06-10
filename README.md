@@ -23,7 +23,7 @@ Or add it to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.13")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.14")
 ]
 ```
 
@@ -83,10 +83,17 @@ let configuration = AstroConfiguration(
     embedded: true,                     // Embedded mode (optional, default: true)
     biometricGracePeriod: 120,          // Seconds to skip biometric re-prompt (optional, default: 120)
     style: AstroStyle(                  // Custom style settings (optional)
-        backgroundColor: "#FFFFFF",
+        backgroundColor: .white,
+        primaryColor: UIColor(red: 0.0, green: 0.86, blue: 0.75, alpha: 1),
+        buttons: AstroButtonStyle(
+            colors: AstroButtonColors(
+                primaryBackground: UIColor(red: 0.0, green: 0.86, blue: 0.75, alpha: 1),
+                primaryText: .black
+            )
+        ),
         header: AstroHeaderStyle(
-            backgroundColor: "#EFEFEF",
-            borderColor: "#CCCCCC",
+            backgroundColor: UIColor(red: 0.937, green: 0.937, blue: 0.937, alpha: 1),
+            borderColor: UIColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1),
             borderWidth: 1,
             paddingHorizontal: 24,
             paddingVertical: 16
@@ -119,6 +126,7 @@ let configuration = AstroConfiguration(
 | `embedded` | `Bool?` | No | Embedded mode (default: `true`) |
 | `biometricGracePeriod` | `TimeInterval?` | No | Seconds to skip biometric re-prompt after a successful auth. Default: `120` (2 min). Range: `0`–`600` (10 min). Set to `0` to always require biometric. |
 | `style` | `AstroStyle?` | No | Custom style settings for background and header (see [Style Customization](#style-customization)) |
+| `styleOverrides` | `[String: Any]?` | No | Free-form hex/color overrides forwarded to the web, mirroring the `AstroStyle` key shape. Escape hatch for tokens not yet in the typed catalog (see [Hex-string escape hatch via `styleOverrides`](#hex-string-escape-hatch-via-styleoverrides)) |
 | `logSetting` | `AstroLogSetting?` | No | Logging configuration |
 
 ### Home Banners
@@ -636,17 +644,28 @@ You can customize the SDK's visual appearance using `AstroStyle`. This allows yo
 
 ### AstroStyle
 
-| Property          | Type                | Description                                              |
-|-------------------|---------------------|----------------------------------------------------------|
-| `backgroundColor` | `String?`           | Main background color as hex string (e.g., `"#FFFFFF"`)  |
-| `header`          | `AstroHeaderStyle?` | Header style settings                                    |
+| Property          | Type                  | Description                                                                                                            |
+|-------------------|-----------------------|------------------------------------------------------------------------------------------------------------------------|
+| `backgroundColor` | `UIColor?`            | Main background color (e.g., `.white`). Also cascades to `surface.base` when not overridden.                          |
+| `primaryColor`    | `UIColor?`            | Primary brand color. Cascades to `surface.highlight`, `text.highlight`, and `border.highlight` when those tokens are not overridden. |
+| `surface`         | `AstroSurfaceColors?` | Background fills for containers, cards, banners and overlays. See [Style Tokens Reference](STYLE-TOKENS.md#astrosurfacecolors).           |
+| `text`            | `AstroTextColors?`    | Foreground colors for typography. See [Style Tokens Reference](STYLE-TOKENS.md#astrotextcolors).                                       |
+| `border`          | `AstroBorderColors?`  | Stroke colors for outlines, dividers, and separators. See [Style Tokens Reference](STYLE-TOKENS.md#astrobordercolors).                   |
+| `typography`      | `AstroTypography?`          | Global typography settings — single field `fontFamily: String?` used as the default font family across the SDK. See [Style Tokens Reference](STYLE-TOKENS.md#astrotypography). |
+| `buttons`         | `AstroButtonStyle?`         | Wrapper around `AstroButtonColors` (12 variants × 11 props) and optional `AstroButtonTypography`. See [Style Tokens Reference](STYLE-TOKENS.md#astrobuttonstyle). |
+| `buttonsIcon`     | `AstroButtonIconStyle?`     | Wrapper around `AstroButtonIconColors` (same 12 variants, icon-specific) and optional `AstroButtonIconTypography`. See [Style Tokens Reference](STYLE-TOKENS.md#astrobuttoniconstyle). |
+| `buttonsPill`     | `AstroButtonPillStyle?`     | Wrapper around `AstroButtonPillColors` (14 statuses) and optional `AstroButtonPillTypography`. See [Style Tokens Reference](STYLE-TOKENS.md#astrobuttonpillstyle). |
+| `inputs`          | `AstroInputStyle?`          | Wrapper around `AstroInputColors` and optional `AstroInputTypography` (input / label / helper / placeholder). See [Style Tokens Reference](STYLE-TOKENS.md#astroinputstyle). |
+| `header`          | `AstroHeaderStyle?`   | Header style settings                                                                                                  |
+
+> All color values are `UIColor?` — construct them with `UIColor(red:green:blue:alpha:)`, a UIKit named color like `UIColor.systemBlue`, or `UIColor(named:)` for an asset-catalog entry. Alpha is honored: a `UIColor` with `alpha < 1.0` is delivered to the SDK and rendered with transparency. See the [Style Tokens Reference — Color values](STYLE-TOKENS.md#color-values) for details.
 
 ### AstroHeaderStyle
 
 | Property            | Type       | Default     | Description                                                          |
 |---------------------|------------|-------------|----------------------------------------------------------------------|
-| `backgroundColor`   | `String?`  | Theme-based | Header background color as hex string                                |
-| `borderColor`       | `String?`  | Theme-based | Header bottom border color as hex string                             |
+| `backgroundColor`   | `UIColor?` | Theme-based | Header background color                                              |
+| `borderColor`       | `UIColor?` | Theme-based | Header bottom border color                                           |
 | `borderWidth`       | `CGFloat?` | `0`         | Header bottom border width in points. Set to `0` to hide the border  |
 | `paddingHorizontal` | `CGFloat?` | `24`        | Horizontal padding inside the header                                 |
 | `paddingVertical`   | `CGFloat?` | `16`        | Vertical padding inside the header                                   |
@@ -655,10 +674,21 @@ You can customize the SDK's visual appearance using `AstroStyle`. This allows yo
 
 ```swift
 let style = AstroStyle(
-    backgroundColor: "#FFFFFF",
+    backgroundColor: .white,
+    primaryColor: UIColor(red: 0.0, green: 0.86, blue: 0.75, alpha: 1),
+    buttons: AstroButtonStyle(
+        colors: AstroButtonColors(
+            primaryBackground: UIColor(red: 0.0, green: 0.86, blue: 0.75, alpha: 1),
+            primaryText: .black
+        )
+    ),
+    surface: AstroSurfaceColors(
+        // 50%-opacity black scrim — alpha is honored end-to-end.
+        overlay: UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)
+    ),
     header: AstroHeaderStyle(
-        backgroundColor: "#EFEFEF",
-        borderColor: "#CCCCCC",
+        backgroundColor: UIColor(red: 0.937, green: 0.937, blue: 0.937, alpha: 1),
+        borderColor: UIColor(red: 0.8, green: 0.8, blue: 0.8, alpha: 1),
         borderWidth: 1,
         paddingHorizontal: 24,
         paddingVertical: 16
@@ -683,12 +713,31 @@ let configuration = AstroConfiguration(
 > let isDark = UITraitCollection.current.userInterfaceStyle == .dark
 >
 > let style = AstroStyle(
->     backgroundColor: isDark ? "#041311" : "#FFFFFF",
+>     backgroundColor: isDark ? UIColor(red: 0.016, green: 0.075, blue: 0.067, alpha: 1) : .white,
 >     header: AstroHeaderStyle(
->         backgroundColor: isDark ? "#061E1D" : "#EFEFEF"
+>         backgroundColor: isDark ? UIColor(red: 0.024, green: 0.118, blue: 0.114, alpha: 1)
+>                                 : UIColor(red: 0.937, green: 0.937, blue: 0.937, alpha: 1)
 >     )
 > )
 > ```
+
+### Hex-string escape hatch via `styleOverrides`
+
+For partners who need to pass colors as hex strings — for example, theme values fetched from a remote configuration service, or tokens not yet exposed by the typed `AstroStyle` catalog — use `AstroConfiguration.styleOverrides`. Its color leaves accept both hex strings (`"#RRGGBB"` / `"#RRGGBBAA"`) and native `UIColor` values interchangeably. See [Free-form overrides via `styleOverrides`](STYLE-TOKENS.md#free-form-overrides-via-styleoverrides) for the full contract.
+
+```swift
+let configuration = AstroConfiguration(
+    environment: "sandbox",
+    appIssuer: "your-app-issuer",
+    clientId: "your-client-id",
+    partnerUserId: "your-partner-user-id",
+    accessToken: "your-access-token",
+    styleOverrides: [
+        "backgroundColor": "#FFFFFF",
+        "primaryColor": "#00DBBF"
+    ]
+)
+```
 
 ## Co-Branded Header Logo
 
@@ -790,6 +839,7 @@ let configuration = AstroConfiguration(
 
 - [Changelog](CHANGELOG.md) — Version history and what changed in each release.
 - [Events Reference](EVENTS.md) — All analytics events emitted by the SDK, including screen names, event names, categories, and properties.
+- [Style Tokens Reference](STYLE-TOKENS.md) — Full catalog of design tokens accepted by `AstroStyle` (surface, text, border, buttons), plus cascade rules.
 - [Migration Guides](migrations/) — Step-by-step guides for upgrading between versions that include breaking changes.
 
 ## Support

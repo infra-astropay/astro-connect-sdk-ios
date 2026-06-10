@@ -4,6 +4,19 @@ All notable changes to the AstroConnectSDK for iOS will be documented in this fi
 
 ---
 
+## [1.0.14]
+
+> **Breaking change:** The color fields on the typed `AstroStyle` API changed from hex `String?` to `UIColor?`. This affects `AstroStyle.backgroundColor`, `AstroHeaderStyle.backgroundColor`, and `AstroHeaderStyle.borderColor`. Code that passes a hex string (e.g. `AstroStyle(backgroundColor: "#FFFFFF")`) will no longer compile — pass a `UIColor` instead, or move the hex value into the `styleOverrides` dictionary. See the [Migration Guide](migrations/v1.0.13-to-v1.0.14.md) for details.
+
+### Added
+
+- **Style customization**: `AstroStyle` now lets you override colors and typography across the SDK, including brand colors, surface/text/border tokens, per-component wrappers (`buttons`, `buttonsIcon`, `buttonsPill`, `inputs`), and a global font family. See [Style Customization](README.md#style-customization) and the [Style Tokens Reference](STYLE-TOKENS.md) for the full catalog.
+  - Color leaves in `styleOverrides` accept both hex strings (6- or 8-digit `#RRGGBB` / `#RRGGBBAA`) and `UIColor` values.
+  - Brand colors and the typed `surface.base` / `surface.highlight` sub-tokens apply throughout the SDK, including the initial loading screen and spinner. See [Brand color aliases](STYLE-TOKENS.md#brand-color-aliases-apply-throughout-the-sdk).
+  - Invalid color hex in `styleOverrides` is rejected at `AstroConfiguration.validate()` time.
+
+---
+
 ## [1.0.13]
 
 > **Breaking change:** `AstroResult.closed` now carries `(code: String, message: String)` associated values describing why the SDK closed. Existing `switch` statements on `AstroResult` must update the `.closed` arm. See the [Migration Guide](migrations/v1.0.12-to-v1.0.13.md) for details.
