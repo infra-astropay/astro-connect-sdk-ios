@@ -4,6 +4,16 @@ All notable changes to the AstroConnectSDK for iOS will be documented in this fi
 
 ---
 
+## [1.0.15]
+
+### Added
+
+- **Native KYC** (`AstroConnectSDKNativeKYC` product): the SDK now runs the identity verification flow natively on the device when the server enables it, instead of falling back to an in-app browser session. Native KYC ships in the new `AstroConnectSDKNativeKYC` product; the core `AstroConnectSDK` product is unchanged for everyone else and includes no identity-verification dependency. The native flow honors your configured `style` / `styleOverrides`, `theme`, and `language`. Choose the product that matches your flows — see [Installation](README.md#installation).
+- **`Info.plist` keys for native KYC** (only when using `AstroConnectSDKNativeKYC`): add `NSMicrophoneUsageDescription`, `NSPhotoLibraryUsageDescription`, and `NSPhotoLibraryAddUsageDescription` to your app's `Info.plist`. See [Required Permissions](README.md#native-kyc--additional-plist-keys) for the full entries.
+- **Native KYC progress events**: the native identity verification flow now reports its progress on the SDK's event callback (`AstroConnect.onEvent` / `AstroResult.event`), emitting a loading event when the flow starts and further events when a document result and a liveness result are produced. Purely additive — no action required.
+
+---
+
 ## [1.0.14]
 
 > **Breaking change:** The color fields on the typed `AstroStyle` API changed from hex `String?` to `UIColor?`. This affects `AstroStyle.backgroundColor`, `AstroHeaderStyle.backgroundColor`, and `AstroHeaderStyle.borderColor`. Code that passes a hex string (e.g. `AstroStyle(backgroundColor: "#FFFFFF")`) will no longer compile — pass a `UIColor` instead, or move the hex value into the `styleOverrides` dictionary. See the [Migration Guide](migrations/v1.0.13-to-v1.0.14.md) for details.
