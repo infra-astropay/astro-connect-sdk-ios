@@ -2,6 +2,8 @@
 
 SDK for integrating AstroPay Connect into iOS applications.
 
+The SDK ships in **two flavors**: a **core** product (`AstroConnectSDK`) for most integrations, and a **native KYC** product (`AstroConnectSDKNativeKYC`) that adds on-device identity verification for regulated markets. Both expose the identical public API — see [Choosing a product](#choosing-a-product-core-vs-native-kyc) to pick one.
+
 ## Requirements
 
 - iOS 15.0+
@@ -10,6 +12,27 @@ SDK for integrating AstroPay Connect into iOS applications.
 
 ## Installation
 
+### Choosing a product: core vs. native KYC
+
+The SDK ships **two products** at the same version — the same integration code, but different bundled capabilities. Pick the one that matches your flows:
+
+| Product | Use when | On-device identity verification | Extra dependency |
+|---------|----------|---------------------------------|------------------|
+| `AstroConnectSDK` (core) | The standard product for most integrations. Identity verification, when the server requests it, runs through the standard in-app browser flow. | Not included | None |
+| `AstroConnectSDKNativeKYC` (native KYC) | You operate in a regulated market (e.g. Brazil) that requires **on-device identity verification** — face liveness and document capture handled natively in your app rather than in the in-app browser. | Included | Adds CafSDK (`7.0.0`) |
+
+**Not sure which to pick?** Use the core **`AstroConnectSDK`** product — most integrations don't need native KYC, and switching to `AstroConnectSDKNativeKYC` later requires **no code changes** beyond the import (see [Switching between core and native KYC](#switching-between-core-and-native-kyc)).
+
+Both products expose the identical public API — only the import and the bundled native KYC capability differ. If you integrate `AstroConnectSDK` and a native KYC flow is requested, it returns an error result instead of running, and every other feature works normally.
+
+Import the product you chose:
+
+```swift
+import AstroConnectSDK      // core
+// or
+import AstroConnectSDKNativeKYC   // includes native KYC
+```
+
 ### Option 1: Swift Package Manager (Recommended)
 
 Add the AstroConnectSDK package to your Xcode project:
@@ -17,23 +40,59 @@ Add the AstroConnectSDK package to your Xcode project:
 1. In Xcode, go to **File → Add Packages**
 2. Enter the repository URL: `https://github.com/infra-astropay/astro-connect-sdk-ios`
 3. Select the version you want to use
-4. Click **Add Package**
+4. Add the product you need to your target: **`AstroConnectSDK`** (core) or **`AstroConnectSDKNativeKYC`** (native KYC)
+5. Click **Add Package**
 
-Or add it to your `Package.swift`:
+Or add it to your `Package.swift`. The package exposes both products from the same version — list whichever your target imports:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.14")
+    .package(url: "https://github.com/infra-astropay/astro-connect-sdk-ios", from: "1.0.15")
 ]
 ```
 
+```swift
+// Core product (no native KYC, no CafSDK)
+.product(name: "AstroConnectSDK", package: "astro-connect-sdk-ios")
+
+// or — native KYC product (pulls in CafSDK 7.0.0 transitively)
+.product(name: "AstroConnectSDKNativeKYC", package: "astro-connect-sdk-ios")
+```
+
+When you select `AstroConnectSDKNativeKYC` via Swift Package Manager, CafSDK is resolved transitively — no additional step required.
+
 ### Option 2: Manual Integration – Using XCFramework
 
-To integrate AstroConnectSDK manually into your Xcode project, import the SDK as a framework using the `astro-connect-sdk-{VERSION}.xcframework` file (e.g., `astro-connect-sdk-1.0.0.xcframework`).
+Two XCFrameworks are published at the same version, one per product:
 
-When adding the file, make sure to check "Copy items if needed" and select your app target under "Add to targets" to include the framework in your project.
+- `AstroConnectSDK-{VERSION}.xcframework` — core, no native KYC.
+- `AstroConnectSDKNativeKYC-{VERSION}.xcframework` — includes native KYC.
+
+Download the XCFramework zips from the **Releases** page of the SDK repository (`https://github.com/infra-astropay/astro-connect-sdk-ios/releases`); each release attaches both products as assets.
+
+Import the XCFramework that matches the product you need. When adding the file, make sure to check "Copy items if needed" and select your app target under "Add to targets" to include the framework in your project.
 
 Next, embed the framework in your app's target settings: go to the Frameworks, Libraries, and Embedded Content section, select the xcframework, and ensure "Embed & Sign" is selected.
+
+> **Note:** If you use the **`AstroConnectSDKNativeKYC`** XCFramework, the native KYC feature requires CafSDK to be added separately to your project. You can add it via Swift Package Manager using the repository `https://github.com/combateafraude/caf-ios-sdk` (version 7.0.0 — the exact version this SDK is built against), or include its XCFramework manually. The core **`AstroConnectSDK`** XCFramework does not require CafSDK.
+
+### Switching between core and native KYC
+
+Both products expose an identical public API, so moving from `AstroConnectSDK` to `AstroConnectSDKNativeKYC` (or back) needs **no code changes** beyond the import. To switch:
+
+**Swift Package Manager**
+
+1. In your target, replace the `AstroConnectSDK` product with `AstroConnectSDKNativeKYC` (same version). CafSDK is resolved transitively — no extra step.
+2. Update the import: `import AstroConnectSDKNativeKYC`.
+3. Add the native KYC keys to your `Info.plist` (see [Native KYC — Additional Plist Keys](#native-kyc--additional-plist-keys)).
+
+**XCFramework (manual)**
+
+1. Replace `AstroConnectSDK-{VERSION}.xcframework` with `AstroConnectSDKNativeKYC-{VERSION}.xcframework`.
+2. Add CafSDK `7.0.0` to your project (see the note in [Option 2](#option-2-manual-integration--using-xcframework)).
+3. Update the import to `import AstroConnectSDKNativeKYC` and add the `Info.plist` keys as above.
+
+To go back to core, reverse the steps: switch the product/XCFramework, change the import to `import AstroConnectSDK`, and remove the CafSDK dependency. The KYC-only `Info.plist` keys can be removed if no other flow needs them.
 
 ## Configuration
 
@@ -60,6 +119,28 @@ If your flow uses biometric authentication (2FA with Face ID), add:
 ```
 
 > **Note:** This permission is required for devices with Face ID. Touch ID does not require a usage description in Info.plist.
+
+#### Native KYC — Additional Plist Keys
+
+> These keys are only required when you integrate the **`AstroConnectSDKNativeKYC`** product. The core **`AstroConnectSDK`** product does not run the native KYC flow and needs none of these keys.
+
+If your integration uses the native KYC flow, add the following keys to your `Info.plist`:
+
+```xml
+<!-- Required by the face liveness module for audio liveness detection -->
+<key>NSMicrophoneUsageDescription</key>
+<string>Microphone access is required for identity verification</string>
+
+<!-- Required to allow document upload from the photo library -->
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Photo library access is required for document verification</string>
+
+<!-- Required if captured documents are saved to the photo library -->
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>Photo library access is required to save verification documents</string>
+```
+
+Customize the description strings to match your app's tone. iOS will display these strings in the system permission dialogs.
 
 ### Create Configuration
 
@@ -738,6 +819,8 @@ let configuration = AstroConfiguration(
     ]
 )
 ```
+
+> **Native KYC:** The native identity verification flow (available with the **`AstroConnectSDKNativeKYC`** product) also honors your `AstroConfiguration`. Your `style` / `styleOverrides` colors theme its screens — background, primary/brand color, on-screen text, and borders all follow your configured palette — and `theme` (`.light` / `.dark` / `.system`) sets light or dark mode. The native KYC screens render in the **device language**, not the SDK's `language` config — unlike the web flow, where `language` applies. An integration that sets no colors is unchanged.
 
 ## Co-Branded Header Logo
 
