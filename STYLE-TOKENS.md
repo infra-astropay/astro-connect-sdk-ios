@@ -9,15 +9,16 @@ This document describes the full catalog of design tokens accepted by [`AstroSty
 | Slot              | Type                   | Purpose                                                                                                                            |
 |-------------------|------------------------|------------------------------------------------------------------------------------------------------------------------------------|
 | `backgroundColor` | `UIColor?`             | Main background color. Also drives the initial loading screen and cascades to `surface.base` when unset.                           |
-| `primaryColor`    | `UIColor?`             | Primary brand color. Cascades to several highlight/button tokens when those are unset (see [Cascade rules](#cascade-rules)).       |
+| `primaryColor`    | `UIColor?`             | Primary brand color. Cascades to the three highlight tokens (`surface.highlight`, `text.highlight`, `border.highlight`) when those are unset (see [Cascade rules](#cascade-rules)). |
 | `surface`         | `AstroSurfaceColors?`  | Background fills for containers, cards, banners and overlays.                                                                      |
 | `text`            | `AstroTextColors?`     | Foreground colors for typography.                                                                                                  |
 | `border`          | `AstroBorderColors?`   | Stroke colors for outlines, dividers, and separators.                                                                              |
 | `typography`      | `AstroTypography?`     | Global typography settings. Exposes a single field, `fontFamily: String?`, used as the default font family across the SDK.   |
 | `buttons`         | `AstroButtonStyle?`    | Wrapper around `AstroButtonColors` (12 variants × 11 props) and an optional `AstroButtonTypography` slot.                          |
-| `buttonsIcon`     | `AstroButtonIconStyle?` | Wrapper around `AstroButtonIconColors` (same 12 variants, icon-specific props) and an optional `AstroButtonIconTypography` slot.   |
+| `buttonsIcon`     | `AstroButtonIconStyle?` | Wrapper around `AstroButtonIconColors` (14 variants, icon-specific props — the 12 button variants plus two icon-only back-button variants) and an optional `AstroButtonIconTypography` slot.   |
 | `buttonsPill`     | `AstroButtonPillStyle?` | Wrapper around `AstroButtonPillColors` (14 status pills × 5 props) and an optional `AstroButtonPillTypography` slot.               |
 | `inputs`          | `AstroInputStyle?`     | Wrapper around `AstroInputColors` (text inputs, dropdown, phone-country dropdown) and an optional `AstroInputTypography` slot.     |
+| `avatar`          | `AstroAvatarColors?`   | Colors for user avatars and avatar groups — fill, border, initials, icon, focus outline, the ring between grouped avatars, and the loading placeholder. |
 | `header`          | `AstroHeaderStyle?`    | Typed header layout and colors (see [README](README.md#astroheaderstyle)).                                                         |
 
 All color values are `UIColor?` — see [Color values](#color-values) below for the accepted construction forms and alpha support. Per-component typography values are plain numbers (see [`AstroFontStyle`](#astrofontstyle) for accepted formats).
@@ -31,11 +32,13 @@ The brand-level fields (`backgroundColor`, `primaryColor`) propagate to related 
 | `backgroundColor` | `surface.base`                                                                                  |
 | `primaryColor`    | `surface.highlight`, `text.highlight`, `border.highlight`                                       |
 
-Example: setting `backgroundColor: UIColor(red: 0.016, green: 0.075, blue: 0.067, alpha: 1)` and leaving `surface.base` unset is equivalent to setting `surface.base` to the same `UIColor`. Setting both explicitly will use the value passed to `surface`.
+The same cascade applies to the free-form dictionary — see [Brand cascade in `styleOverrides`](#brand-cascade-in-styleoverrides).
+
+Example: setting `backgroundColor: UIColor(red: 0.016, green: 0.075, blue: 0.067, alpha: 1)` and leaving `surface.base` unset is equivalent to setting `surface.base` to the same `UIColor`. Setting both explicitly uses the value passed to `surface.base` — the cascade is evaluated per field, so the other fields of `surface` are unaffected by that choice.
 
 ```swift
-// .white wins for surface.base; primaryColor still cascades to the
-// other highlight/button tokens because they are not set.
+// .white wins for surface.base. The cascade is per field: surface.highlight,
+// text.highlight and border.highlight are unset, so all three take primaryColor.
 let style = AstroStyle(
     backgroundColor: UIColor(red: 0.016, green: 0.075, blue: 0.067, alpha: 1),
     primaryColor: UIColor(red: 0.0, green: 0.86, blue: 0.75, alpha: 1),
@@ -321,12 +324,12 @@ Wrapper for the `buttonsIcon` slot. Both fields optional.
 
 | Field        | Type                          | Description                                                                |
 |--------------|-------------------------------|----------------------------------------------------------------------------|
-| `colors`     | `AstroButtonIconColors?`      | 132 tokens (see `colors:` table below).                                     |
+| `colors`     | `AstroButtonIconColors?`      | 154 tokens (see `colors:` table below).                                     |
 | `typography` | `AstroButtonIconTypography?`  | Single `label` slot of type [`AstroFontStyle?`](#astrofontstyle) for the text variant of icon-with-text buttons. |
 
 #### `colors:` → `AstroButtonIconColors`
 
-Icon buttons mirror the 12 button variants but expose an icon-specific prop set (icon color, text, loader, focus outline). 132 tokens total. Every field is an optional `UIColor?` — see [Color values](#color-values).
+Icon buttons mirror the 12 button variants and add two back-button variants of their own, each with an icon-specific prop set (icon color, text, loader, focus outline). 14 variants × 11 props = 154 tokens total. The `backDefault*` and `backTransparent*` variants are icon-only — they style the back affordance and have no counterpart in `AstroButtonColors`. Every field is an optional `UIColor?` — see [Color values](#color-values).
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -462,6 +465,28 @@ Icon buttons mirror the 12 button variants but expose an icon-specific prop set 
 | `whiteLoaderColor` | `UIColor?` | White icon button — loader |
 | `whiteLoaderColorDisabled` | `UIColor?` | White icon button — disabled loader |
 | `whiteFocusOutlineColor` | `UIColor?` | White icon button — focus outline |
+| `backDefaultBackground` | `UIColor?` | Back button — default background |
+| `backDefaultBackgroundHover` | `UIColor?` | Back button — hover background |
+| `backDefaultBackgroundFocus` | `UIColor?` | Back button — focus background |
+| `backDefaultBackgroundDisabled` | `UIColor?` | Back button — disabled background |
+| `backDefaultIconColor` | `UIColor?` | Back button — icon |
+| `backDefaultIconColorDisabled` | `UIColor?` | Back button — disabled icon |
+| `backDefaultText` | `UIColor?` | Back button — text |
+| `backDefaultTextDisabled` | `UIColor?` | Back button — disabled text |
+| `backDefaultLoaderColor` | `UIColor?` | Back button — loader |
+| `backDefaultLoaderColorDisabled` | `UIColor?` | Back button — disabled loader |
+| `backDefaultFocusOutlineColor` | `UIColor?` | Back button — focus outline |
+| `backTransparentBackground` | `UIColor?` | Back button (transparent) — default background |
+| `backTransparentBackgroundHover` | `UIColor?` | Back button (transparent) — hover background |
+| `backTransparentBackgroundFocus` | `UIColor?` | Back button (transparent) — focus background |
+| `backTransparentBackgroundDisabled` | `UIColor?` | Back button (transparent) — disabled background |
+| `backTransparentIconColor` | `UIColor?` | Back button (transparent) — icon |
+| `backTransparentIconColorDisabled` | `UIColor?` | Back button (transparent) — disabled icon |
+| `backTransparentText` | `UIColor?` | Back button (transparent) — text |
+| `backTransparentTextDisabled` | `UIColor?` | Back button (transparent) — disabled text |
+| `backTransparentLoaderColor` | `UIColor?` | Back button (transparent) — loader |
+| `backTransparentLoaderColorDisabled` | `UIColor?` | Back button (transparent) — disabled loader |
+| `backTransparentFocusOutlineColor` | `UIColor?` | Back button (transparent) — focus outline |
 
 ### `AstroButtonPillStyle`
 
@@ -620,6 +645,22 @@ Tokens for text inputs, including the trailing icon area, the dropdown panel, an
 | `phoneDropdownItemText` | `UIColor?` | Phone dropdown item text |
 | `phoneDropdownItemTextSecondary` | `UIColor?` | Phone dropdown item text (secondary) |
 
+### `AstroAvatarColors`
+
+Colors for user avatars and avatar groups. Every field below is an optional `UIColor?` — see [Color values](#color-values).
+
+| Field                | Description                                            |
+|----------------------|--------------------------------------------------------|
+| `background`         | Avatar fill behind initials and the fallback icon      |
+| `backgroundHover`    | Avatar fill / hover                                    |
+| `border`             | Avatar border, when a bordered avatar is rendered      |
+| `borderHover`        | Avatar border / hover                                  |
+| `text`               | Initials shown when no image is available              |
+| `iconColor`          | Fallback icon shown when there are no initials         |
+| `focusOutlineColor`  | Focus outline on a tappable avatar                     |
+| `groupRing`          | Separating ring between overlapping avatars in a group |
+| `skeletonBackground` | Placeholder fill while the avatar is loading           |
+
 ### `AstroTypography`
 
 Global typography settings. Exposes a single field — `fontFamily` — used as the default font family for every text token rendered by the SDK. Per-token typography customization (overriding `displayLarge`, `base500`, etc. individually) is **not** supported at the global typography level; use per-component typography slots (see [`AstroButtonStyle`](#astrobuttonstyle), [`AstroInputStyle`](#astroinputstyle), etc.) to customize specific component text.
@@ -671,7 +712,7 @@ let style = AstroStyle(
     ),
     buttons: AstroButtonStyle(
         colors: AstroButtonColors(
-            // Text colors are not cascaded, only backgrounds.
+            // Button tokens are never cascaded — set each one explicitly.
             primaryText: .black,
             primaryBackgroundDisabled: UIColor(red: 0.122, green: 0.290, blue: 0.271, alpha: 1),
             primaryTextDisabled: UIColor(red: 0.361, green: 0.478, blue: 0.467, alpha: 1)
@@ -692,9 +733,59 @@ let style = AstroStyle(
 
 ## Free-form overrides via `styleOverrides`
 
-`AstroConfiguration.styleOverrides` is a free-form `[String: Any]?` that mirrors the same key shape as the typed `AstroStyle`. It is intended for partners who need to set tokens dynamically (e.g. fetched from a remote theme service) or to reach tokens that have not yet been promoted to the typed catalog.
+`AstroConfiguration.styleOverrides` is a free-form `[String: Any]?` that covers the same token catalog as the typed `AstroStyle`. It is intended for partners who need to set tokens dynamically (e.g. fetched from a remote theme service) or to reach tokens that have not yet been promoted to the typed catalog.
 
-The dictionary accepts the same keys as the typed API:
+### Key naming
+
+The typed `AstroStyle` API is **nested** (`buttonsIcon.colors.primaryIconColor`). `styleOverrides` color keys are **flat**: take the flat prefix of the slot from the table below and append the field name from the [Token reference](#token-reference), in camelCase.
+
+| Typed slot    | Flat key prefix | Example typed path                    | Example flat key             |
+|---------------|-----------------|---------------------------------------|------------------------------|
+| `surface`     | `surface`       | `surface.secondary`                   | `surfaceSecondary`           |
+| `text`        | `text`          | `text.highlight`                      | `textHighlight`              |
+| `border`      | `border`        | `border.highlight`                    | `borderHighlight`            |
+| `buttons`     | `button`        | `buttons.colors.primaryBackground`    | `buttonPrimaryBackground`    |
+| `buttonsIcon` | `buttonIcon`    | `buttonsIcon.colors.primaryIconColor` | `buttonIconPrimaryIconColor` |
+| `buttonsPill` | `buttonPill`    | `buttonsPill.colors.highlightText`    | `buttonPillHighlightText`    |
+| `inputs`      | `input`         | `inputs.colors.dropdownBackground`    | `inputDropdownBackground`    |
+| `avatar`      | `avatar`        | `avatar.iconColor`                    | `avatarIconColor`            |
+
+**The component slots are singular in `styleOverrides`.** `buttons`, `buttonsIcon`, `buttonsPill` and `inputs` become `button`, `buttonIcon`, `buttonPill` and `input`. Carrying the plural form over from the typed API is the single most common integration mistake.
+
+The color-only slots — `surface`, `text`, `border` and `avatar` — use their own name as the prefix, unchanged.
+
+`styleOverrides` honors exactly these shapes:
+
+- Flat color keys at the top level — e.g. `"buttonIconPrimaryIconColor": "#00DBBF"`.
+- The same flat color keys nested under a `colors` dictionary — e.g. `"colors": ["buttonIconPrimaryIconColor": "#00DBBF"]`.
+- `typography` with a single `fontFamily` string.
+- Per-component typography under `button` / `buttonIcon` / `buttonPill` / `input`, each holding a `typography` dictionary of slots.
+- `header` with `backgroundColor` / `borderColor`.
+
+A nested structure that mirrors the typed shape for **colors** is not one of them — it is accepted and has no effect:
+
+```swift
+// WRONG — mirrors the typed nested shape; silently ignored
+styleOverrides: [
+    "buttonsIcon": [
+        "colors": ["primaryIconColor": "#00DBBF"]
+    ]
+]
+
+// RIGHT — flat key at the top level
+styleOverrides: [
+    "buttonIconPrimaryIconColor": "#00DBBF"
+]
+
+// RIGHT — the same flat key nested under `colors`
+styleOverrides: [
+    "colors": ["buttonIconPrimaryIconColor": "#00DBBF"]
+]
+```
+
+> **Key names are case-sensitive and are not validated.** A valid color under a key that is not part of the catalog is accepted and simply has no visual effect — no error, no warning, no crash. A typo such as `"buttonsPrimaryBackground"` or `"buttonPrimarybackground"` is a silent no-op. Copy key names from the [Token reference](#token-reference) tables in this document instead of typing them by hand.
+
+### Accepted value forms
 
 - Top-level colors (e.g. `"surfaceBase"`, `"primaryColor"`). Color leaves accept **either** a hex string — 6-digit `"#RRGGBB"` or 8-digit `"#RRGGBBAA"` for alpha, leading `#` optional — **or** a `UIColor` value. Both forms are normalized to the same hex wire representation, so mixing them within the same dictionary is fine. Any malformed hex string causes `AstroConfiguration.validate()` to throw, so invalid hex is caught at configuration time rather than silently dropped at runtime; `UIColor` leaves are always considered valid.
 - The `typography` dictionary, which accepts a single top-level `fontFamily` string — the global default font family, with the same semantics as the typed [`AstroTypography.fontFamily`](#astrotypography). Per-token nested keys (e.g. `typography.base500.fontFamily`, `typography.displayLarge.fontSize`) are **not** honored — they are silently ignored for forward compatibility, so partners migrating away from per-token overrides won't see validation errors but the values won't take effect either.
@@ -741,6 +832,31 @@ let configuration = AstroConfiguration(
 
 > The typed API (`AstroStyle.typography.fontFamily`, per-component `typography` slots, etc.) is the recommended path because it gives compile-time safety and IDE autocompletion. `styleOverrides` is the escape hatch for the dynamic / late-bound use cases described above.
 
+### Brand cascade in `styleOverrides`
+
+The brand cascade described in [Cascade rules](#cascade-rules) also applies to `styleOverrides`, with these semantics:
+
+- **Source:** `primaryColor` only — either as the top-level key `"primaryColor"` or nested as `colors.primaryColor`. `surfaceHighlight` is **not** a cascade source, even though it is accepted as a brand alias for the loading spinner.
+- **Targets:** `surfaceHighlight`, `textHighlight` and `borderHighlight` — filled only when your dictionary does not name them.
+- An explicit value always wins, no matter in which order the keys appear in the dictionary.
+- A `primaryColor` value that cannot be resolved to a color produces no cascade at all; the highlight tokens keep their defaults. (Malformed hex strings are additionally rejected by `AstroConfiguration.validate()`.)
+- `backgroundColor` → `surfaceBase` is unchanged and behaves as described in [Cascade rules](#cascade-rules).
+
+```swift
+// `primaryColor` alone also brands highlighted surfaces, text and borders.
+styleOverrides: [
+    "primaryColor": "#00DBBF"
+]
+// → surfaceHighlight, textHighlight and borderHighlight all resolve to #00DBBF
+
+// Explicit values win; the rest still cascade — order is irrelevant.
+styleOverrides: [
+    "textHighlight": "#FFFFFF",
+    "primaryColor": "#00DBBF"
+]
+// → textHighlight stays #FFFFFF; surfaceHighlight and borderHighlight become #00DBBF
+```
+
 ### Brand color aliases (apply throughout the SDK)
 
 Two brand colors — background and primary — are **special-cased**: when set via `styleOverrides`, they apply throughout the SDK, including the initial loading screen background and the loading spinner. Every other `styleOverrides` key applies only to the main SDK content and does not affect the initial loading screen.
@@ -750,7 +866,9 @@ Each brand color accepts a top-level key in `styleOverrides`, plus a nested form
 | Brand color  | Accepted keys                                                                                                          | Where it applies                  |
 |--------------|---------------------------------------------------------------------------------------------------------------------------|-----------------------------------|
 | Background   | `backgroundColor`, or nested `colors.surfaceBase`                                          | Initial loading screen background |
-| Primary      | `primaryColor`, `surfaceHighlight`, or nested `colors.surfaceHighlight` / `colors.primaryColor` | Loading spinner color             |
+| Primary      | `primaryColor`, `surfaceHighlight`, or nested `colors.surfaceHighlight` / `colors.primaryColor` | Loading spinner color, plus the highlight tokens (`surfaceHighlight`, `textHighlight`, `borderHighlight`) via the [brand cascade](#brand-cascade-in-styleoverrides) |
+
+All the keys in the Primary row feed the loading spinner. The highlight cascade, however, is driven by `primaryColor` only (top-level or `colors.primaryColor`) — passing `surfaceHighlight` sets that one token and colors the spinner, but does not cascade to `textHighlight` or `borderHighlight`.
 
 **Precedence (highest → lowest):**
 

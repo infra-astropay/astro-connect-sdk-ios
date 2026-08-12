@@ -24,13 +24,13 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "AstroConnectSDK",
-            url: "https://github.com/infra-astropay/astro-connect-sdk-ios/releases/download/v1.0.15/AstroConnectSDK-1.0.15.zip",
-            checksum: "cc45cbf256e2c619254447487dd37f5fea76ce560e641ba94bf747cce45fb4ec"
+            url: "https://github.com/infra-astropay/astro-connect-sdk-ios/releases/download/v1.0.16/AstroConnectSDK-1.0.16.zip",
+            checksum: "082e71d0d447039f78e7a0e796faaac52a8d6eeb40e3e91e69c6a87bd51b8400"
         ),
         .binaryTarget(
             name: "AstroConnectSDKNativeKYC",
-            url: "https://github.com/infra-astropay/astro-connect-sdk-ios/releases/download/v1.0.15/AstroConnectSDKNativeKYC-1.0.15.zip",
-            checksum: "2129b49c0fd86d1a1ed170d8aa3aeb660f603da3566e3eaf8b5782eacede2fe3"
+            url: "https://github.com/infra-astropay/astro-connect-sdk-ios/releases/download/v1.0.16/AstroConnectSDKNativeKYC-1.0.16.zip",
+            checksum: "6379ae3031e45c91594ff93d0af06b6e41071670eb099e6ca44ea40a03dd2270"
         ),
         .target(
             name: "AstroConnectNativeKYCCafLink",
